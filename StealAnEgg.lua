@@ -1,4 +1,4 @@
--- [[ Steal An Egg: Advanced Multi-Rarity Menu With Floating Toggle Button ]]
+-- [[ Steal An Egg: Fully Fixed Auto-Farm Menu with FireTouch ]]
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local Workspace = game:GetService("Workspace")
@@ -29,15 +29,14 @@ MainFrame.Position = UDim2.new(0.3, 0, 0.2, 0)
 MainFrame.Size = UDim2.new(0, 280, 0, 320)
 MainFrame.Active = true
 MainFrame.Draggable = true
-MainFrame.Visible = true -- تظهر المنيو بشكل افتراضي
 
 local Title = Instance.new("TextLabel")
 Title.Parent = MainFrame
 Title.Size = UDim2.new(1, 0, 0, 40)
 Title.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-Title.Text = "منيو سرقة البيض المتطور"
+Title.Text = "منيو سرقة البيض المصلح 100%"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-Title.TextSize = 18
+Title.TextSize = 16
 
 local ContentScroll = Instance.new("ScrollingFrame")
 ContentScroll.Parent = MainFrame
@@ -52,27 +51,24 @@ UIListLayout.Parent = ContentScroll
 UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 UIListLayout.Padding = UDim.new(0, 8)
 
--- [[ زر الإخفاء والإظهار العائم بالصورة ]]
+-- زر الإخفاء والإظهار العائم
 local ToggleButton = Instance.new("ImageButton")
 ToggleButton.Parent = ScreenGui
 ToggleButton.Size = UDim2.new(0, 50, 0, 50)
-ToggleButton.Position = UDim2.new(0.05, 0, 0.2, 0) -- موقع الزر على يسار الشاشة
+ToggleButton.Position = UDim2.new(0.05, 0, 0.2, 0)
 ToggleButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-ToggleButton.Image = "rbxassetid://10613271790" -- معرف صورة أيقونة جيمينج (يمكنك تغيير هذا الرقم لأي صورة روبلوكس تريدها)
+ToggleButton.Image = "rbxassetid://10613271790"
 ToggleButton.Active = true
-ToggleButton.Draggable = true -- يمكنك سحب الزر العائم ووضعه في أي مكان على الشاشة بيدك
+ToggleButton.Draggable = true
 
--- إضافة حواف دائرية للزر لجعله فخماً
 local UICorner = Instance.new("UICorner")
-UICorner.CornerRadius = UDim.new(0.5, 0) -- تجعل الزر دائرياً بالكامل
+UICorner.CornerRadius = UDim.new(0.5, 0)
 UICorner.Parent = ToggleButton
 
--- دالة عمل زر الإخفاء والإظهار عند الضغط
 ToggleButton.MouseButton1Click:Connect(function()
     MainFrame.Visible = not MainFrame.Visible
 end)
 
--- قيم التفعيل الافتراضية للندرات والأوتو فارم
 _G.CustomAutoFarm = false
 _G.AutoHatch = false
 _G.Rarities = {
@@ -83,7 +79,6 @@ _G.Rarities = {
     ["divine"] = false
 }
 
--- دالة مساعدة لإنشاء أزرار التفعيل داخل القائمة
 local function createToggle(name, callback)
     local button = Instance.new("TextButton")
     button.Parent = ContentScroll
@@ -110,7 +105,6 @@ local function createToggle(name, callback)
     return button
 end
 
--- إنشاء أزرار التحكم
 createToggle("تشغيل الأوتو فارم الرئيسي", function(val) _G.CustomAutoFarm = val end)
 createToggle("بيض ميثك (Mythic)", function(val) _G.Rarities["mythic"] = val end)
 createToggle("بيض أسطوري (Legendary)", function(val) _G.Rarities["legendary"] = val end)
@@ -139,9 +133,7 @@ local function findTargetEgg()
                 local name = string.lower(egg.Name)
                 for rarity, enabled in pairs(_G.Rarities) do
                     if enabled and string.find(name, rarity) then
-                        if egg:IsA("BasePart") or egg:IsA("Model") or egg:IsA("Tool") then
-                            return egg
-                        end
+                        return egg
                     end
                 end
             end
@@ -150,27 +142,56 @@ local function findTargetEgg()
     return nil
 end
 
--- حلقة الأوتو فارم الذكية والسرعة الفائقة
+-- حلقة الأوتو فارم المصلحة والمعدلة لضمان السرقة الفورية
 task.spawn(function()
     while true do
-        task.wait(0.01)
+        task.wait(0.02)
         if _G.CustomAutoFarm then
             pcall(function()
                 local char = LocalPlayer.Character
                 local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                
                 if hrp then
-                    if not char:FindFirstChildOfClass("Tool") and not LocalPlayer.Backpack:FindFirstChildOfClass("Tool") then
+                    -- التحقق من حمل البيضة عبر فحص اليد والحقيبة
+                    local holdingEgg = false
+                    for _, child in pairs(char:GetChildren()) do
+                        if child:IsA("Tool") or string.find(string.lower(child.Name), "egg") then
+                            holdingEgg = true
+                        end
+                    end
+                    for _, child in pairs(LocalPlayer.Backpack:GetChildren()) do
+                        if child:IsA("Tool") or string.find(string.lower(child.Name), "egg") then
+                            holdingEgg = true
+                        end
+                    end
+                    
+                    if not holdingEgg then
                         local egg = findTargetEgg()
                         if egg then
-                            local pos = egg:IsA("Model") and egg:GetPivot().Position or egg.Position
-                            hrp.CFrame = CFrame.new(pos)
+                            local part = egg:IsA("Model") and (egg:FindFirstChildOfClass("BasePart") or egg.PrimaryPart) or egg
+                            if part then
+                                -- 1. الانتقال الفوري للبيضة
+                                hrp.CFrame = CFrame.new(part.Position)
+                                
+                                -- 2. تفعيل اللمس البرمجي لإجبار اللعبة على جعل الحساب يسرق البيضة فوراً
+                                if egg:FindFirstChild("TouchInterest") then
+                                    firetouchinterest(hrp, part, 0)
+                                    task.wait(0.01)
+                                    firetouchinterest(hrp, part, 1)
+                                elseif part:FindFirstChild("TouchInterest") then
+                                    firetouchinterest(hrp, part, 0)
+                                    task.wait(0.01)
+                                    firetouchinterest(hrp, part, 1)
+                                end
+                            end
                         end
                     else
+                        -- إذا نجحت السرقة وتم مسك البيضة، طير فوراً للسيفزون الخاص بك لتفريغها
                         local safeZone = findMySafeZone()
                         if safeZone then
                             local zonePos = safeZone:IsA("Model") and safeZone:GetPivot().Position or safeZone.Position
                             hrp.CFrame = CFrame.new(zonePos + Vector3.new(0, 3, 0))
-                            task.wait(0.05)
+                            task.wait(0.1)
                         end
                     end
                 end
@@ -194,5 +215,3 @@ task.spawn(function()
         end
     end
 end)
-
-print("⚡ تم تحديث السكربت بالكامل مع زر الإخفاء الدائري العائم!")

@@ -1,61 +1,64 @@
--- [[ Steal An Egg: Fast Auto-Farm (Eternal & Divine Only) ]]
+-- [[ Steal An Egg: Full Script Part 1 ]]
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local Workspace = game:GetService("Workspace")
 
-_G.CustomAutoFarm = true 
-
-local function findMySafeZone()
-    local plots = Workspace:FindFirstChild("Plots") or Workspace:FindFirstChild("Bases")
-    if plots then
-        for _, plot in pairs(plots:GetChildren()) do
-            if plot:FindFirstChild("Owner") and plot.Owner.Value == LocalPlayer then
-                return plot:FindFirstChild("DepositZone") or plot:FindFirstChild("Main") or plot
-            end
-        end
+-- نظام تخطي الحظر والطرد (Anti-Kick)
+local mt = getrawmetatable(game)
+local old = mt.__namecall
+setreadonly(mt, false)
+mt.__namecall = newcclosure(function(self, ...)
+    local method = getnamecallmethod()
+    if method == "Kick" or method == "kick" then
+        return wait(9e9) -- إيقاف عملية الطرد نهائياً
     end
-    return nil
-end
+    return old(self, ...)
+end)
+setreadonly(mt, true)
 
-local function findTargetEgg()
-    local folders = {Workspace:FindFirstChild("Eggs"), Workspace:FindFirstChild("DroppedEggs"), Workspace}
-    for _, folder in pairs(folders) do
-        if folder then
-            for _, egg in pairs(folder:GetChildren()) do
-                local name = string.lower(egg.Name)
-                if string.find(name, "eternal") or string.find(name, "divine") then
-                    if egg:IsA("BasePart") or egg:IsA("Model") or egg:IsA("Tool") then
-                        return egg
-                    end
-                end
-            end
-        end
-    end
-    return nil
-end
+-- إنشاء المنيو (واجهة رسومية خفيفة لدلتا)
+local ScreenGui = Instance.new("ScreenGui")
+local MainFrame = Instance.new("Frame")
+local Title = Instance.new("TextLabel")
+local FarmToggle = Instance.new("TextButton")
+local HatchToggle = Instance.new("TextButton")
 
-task.spawn(function()
-    while _G.CustomAutoFarm and task.wait(0.01) do 
-        pcall(function()
-            local char = LocalPlayer.Character
-            local hrp = char and char:FindFirstChild("HumanoidRootPart")
-            
-            if hrp then
-                if not char:FindFirstChildOfClass("Tool") and not LocalPlayer.Backpack:FindFirstChildOfClass("Tool") then
-                    local egg = findTargetEgg()
-                    if egg then
-                        local pos = egg:IsA("Model") and egg:GetPivot().Position or egg.Position
-                        hrp.CFrame = CFrame.new(pos)
-                    end
-                else
-                    local safeZone = findMySafeZone()
-                    if safeZone then
-                        local zonePos = safeZone:IsA("Model") and safeZone:GetPivot().Position or safeZone.Position
-                        hrp.CFrame = CFrame.new(zonePos + Vector3.new(0, 3, 0))
-                        task.wait(0.05)
-                    end
-                end
-            end
-        end)
+ScreenGui.Parent = game.CoreGui
+MainFrame.Name = "StealAnEggMenu"
+MainFrame.Parent = ScreenGui
+MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+MainFrame.Position = UDim2.new(0.3, 0, 0.3, 0)
+MainFrame.Size = UDim2.new(0, 250, 0, 200)
+MainFrame.Active = true
+MainFrame.Draggable = true
+
+Title.Parent = MainFrame
+Title.Size = UDim2.new(1, 0, 0, 40)
+Title.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+Title.Text = "منيو سرقة البيض النادر"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.TextSize = 18
+
+_G.CustomAutoFarm = false
+_G.AutoHatch = false
+
+FarmToggle.Parent = MainFrame
+FarmToggle.Position = UDim2.new(0.05, 0, 0.25, 0)
+FarmToggle.Size = UDim2.new(0.9, 0, 0, 40)
+FarmToggle.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+FarmToggle.Text = "تشغيل الأوتو فارم: مغلق"
+FarmToggle.TextColor3 = Color3.fromRGB(255, 0, 0)
+FarmToggle.TextSize = 16
+
+FarmToggle.MouseButton1Click:Connect(function()
+    _G.CustomAutoFarm = not _G.CustomAutoFarm
+    if _G.CustomAutoFarm then
+        FarmToggle.Text = "تشغيل الأوتو فارم: مفعل"
+        FarmToggle.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+        FarmToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    else
+        FarmToggle.Text = "تشغيل الأوتو فارم: مغلق"
+        FarmToggle.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+        FarmToggle.TextColor3 = Color3.fromRGB(255, 0, 0)
     end
 end)
